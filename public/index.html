@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Solana Hourly Price Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1 {
+      margin-top: 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+      background: #020617;
+    }
+    th, td {
+      border: 1px solid #1f2937;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) {
+      background: #030712;
+    }
+    .timestamp {
+      font-family: monospace;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .small {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solana Hourly Price Tracker</h1>
+  <p class="small">
+    Every hour this site pulls the SOL price in USD from CoinGecko and stores:
+    <strong>price</strong> and <strong>price × 4.91</strong>.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Hour (UTC)</th>
+        <th>Timestamp</th>
+        <th>SOL Price (USD)</th>
+        <th>Price × 4.91 (USD)</th>
+      </tr>
+    </thead>
+    <tbody id="price-table-body">
+      <!-- Rows injected by JavaScript -->
+    </tbody>
+  </table>
+
+  <script>
+    async function fetchPrices() {
+      try {
+        const res = await fetch('/api/prices');
+        const data = await res.json();
+
+        // Sort by time, oldest first
+        data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        const tbody = document.getElementById('price-table-body');
+        tbody.innerHTML = '';
+
+        data.forEach(entry => {
+          const tr = document.createElement('tr');
+
+          const date = new Date(entry.timestamp);
+          const hourLabel = date.toISOString().slice(11, 16); // "HH:MM" in UTC
+
+          const tdHour = document.createElement('td');
+          tdHour.textContent = hourLabel;
+
+          const tdTs = document.createElement('td');
+          tdTs.textContent = entry.timestamp;
+          tdTs.className = 'timestamp';
+
+          const tdPrice = document.createElement('td');
+          tdPrice.textContent = '$' + Number(entry.priceUsd).toFixed(4);
+
+          const tdMult = document.createElement('td');
+          tdMult.textContent = '$' + Number(entry.priceTimes4_91).toFixed(4);
+
+          tr.appendChild(tdHour);
+          tr.appendChild(tdTs);
+          tr.appendChild(tdPrice);
+          tr.appendChild(tdMult);
+
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Error fetching prices:', err);
+      }
+    }
+
+    // Load immediately
+    fetchPrices();
+    // Refresh every 5 minutes
+    setInterval(fetchPrices, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
